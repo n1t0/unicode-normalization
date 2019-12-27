@@ -32,12 +32,12 @@ pub struct Decompositions<I> {
     // 2) "Ready" characters which are sorted and ready to emit on demand;
     // 3) A "pending" block which stills needs more characters for us to be able
     //    to sort in canonical order and is not safe to emit.
-    buffer: SmallVec<[(u8, char); 4]>,
+    buffer: SmallVec<[(u8, char, isize); 4]>,
     ready: Range<usize>,
 }
 
 #[inline]
-pub fn new_canonical<I: Iterator<Item=char>>(iter: I) -> Decompositions<I> {
+pub fn new_canonical<I: Iterator<Item = char>>(iter: I) -> Decompositions<I> {
     Decompositions {
         kind: self::DecompositionType::Canonical,
         iter: iter.fuse(),
@@ -47,7 +47,7 @@ pub fn new_canonical<I: Iterator<Item=char>>(iter: I) -> Decompositions<I> {
 }
 
 #[inline]
-pub fn new_compatible<I: Iterator<Item=char>>(iter: I) -> Decompositions<I> {
+pub fn new_compatible<I: Iterator<Item = char>>(iter: I) -> Decompositions<I> {
     Decompositions {
         kind: self::DecompositionType::Compatible,
         iter: iter.fuse(),
@@ -58,14 +58,14 @@ pub fn new_compatible<I: Iterator<Item=char>>(iter: I) -> Decompositions<I> {
 
 impl<I> Decompositions<I> {
     #[inline]
-    fn push_back(&mut self, ch: char) {
+    fn push_back(&mut self, ch: char, first: bool) {
         let class = super::char::canonical_combining_class(ch);
 
         if class == 0 {
             self.sort_pending();
         }
 
-        self.buffer.push((class, ch));
+        self.buffer.push((class, ch, if first { 0 } else { 1 }));
     }
 
     #[inline]
@@ -99,18 +99,26 @@ impl<I> Decompositions<I> {
     }
 }
 
-impl<I: Iterator<Item=char>> Iterator for Decompositions<I> {
-    type Item = char;
+impl<I: Iterator<Item = char>> Iterator for Decompositions<I> {
+    type Item = (char, isize);
 
     #[inline]
-    fn next(&mut self) -> Option<char> {
+    fn next(&mut self) -> Option<(char, isize)> {
         while self.ready.end == 0 {
             match (self.iter.next(), &self.kind) {
                 (Some(ch), &DecompositionType::Canonical) => {
-                    super::char::decompose_canonical(ch, |d| self.push_back(d));
+                    let mut first = true;
+                    super::char::decompose_canonical(ch, |d| {
+                        self.push_back(d, first);
+                        first = false;
+                    });
                 }
                 (Some(ch), &DecompositionType::Compatible) => {
-                    super::char::decompose_compatible(ch, |d| self.push_back(d));
+                    let mut first = true;
+                    super::char::decompose_compatible(ch, |d| {
+                        self.push_back(d, first);
+                        first = false;
+                    });
                 }
                 (None, _) => {
                     if self.buffer.is_empty() {
@@ -138,9 +146,9 @@ impl<I: Iterator<Item=char>> Iterator for Decompositions<I> {
         // This less-than-obviously-safe implementation is chosen for performance,
         // minimizing the number & complexity of branches in `next` in the common
         // case of buffering then unbuffering a single character with each call.
-        let (_, ch) = self.buffer[self.ready.start];
+        let (_, ch, size) = self.buffer[self.ready.start];
         self.increment_next_ready();
-        Some(ch)
+        Some((ch, size))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -149,10 +157,10 @@ impl<I: Iterator<Item=char>> Iterator for Decompositions<I> {
     }
 }
 
-impl<I: Iterator<Item=char> + Clone> fmt::Display for Decompositions<I> {
+impl<I: Iterator<Item = char> + Clone> fmt::Display for Decompositions<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for c in self.clone() {
-            f.write_char(c)?;
+            f.write_char(c.0)?;
         }
         Ok(())
     }

@@ -22,7 +22,7 @@
 //!     assert_eq!(compose('A','\u{30a}'), Some('Å'));
 //!
 //!     let s = "ÅΩ";
-//!     let c = s.nfc().collect::<String>();
+//!     let c = s.nfc().map(|c| c.0).collect::<String>();
 //!     assert_eq!(c, "ÅΩ");
 //! }
 //! ```
@@ -38,58 +38,49 @@
 //! ```
 
 #![deny(missing_docs, unsafe_code)]
-#![doc(html_logo_url = "https://unicode-rs.github.io/unicode-rs_sm.png",
-       html_favicon_url = "https://unicode-rs.github.io/unicode-rs_sm.png")]
+#![doc(
+    html_logo_url = "https://unicode-rs.github.io/unicode-rs_sm.png",
+    html_favicon_url = "https://unicode-rs.github.io/unicode-rs_sm.png"
+)]
 
 extern crate smallvec;
 
-pub use tables::UNICODE_VERSION;
 pub use decompose::Decompositions;
 pub use quick_check::{
+    is_nfc, is_nfc_quick, is_nfc_stream_safe, is_nfc_stream_safe_quick, is_nfd, is_nfd_quick,
+    is_nfd_stream_safe, is_nfd_stream_safe_quick, is_nfkc, is_nfkc_quick, is_nfkd, is_nfkd_quick,
     IsNormalized,
-    is_nfc,
-    is_nfc_quick,
-    is_nfkc,
-    is_nfkc_quick,
-    is_nfc_stream_safe,
-    is_nfc_stream_safe_quick,
-    is_nfd,
-    is_nfd_quick,
-    is_nfkd,
-    is_nfkd_quick,
-    is_nfd_stream_safe,
-    is_nfd_stream_safe_quick,
 };
 pub use recompose::Recompositions;
-pub use stream_safe::StreamSafe;
 use std::str::Chars;
+pub use stream_safe::StreamSafe;
+pub use tables::UNICODE_VERSION;
 
 mod decompose;
 mod lookups;
 mod normalize;
 mod perfect_hash;
-mod recompose;
 mod quick_check;
+mod recompose;
 mod stream_safe;
 mod tables;
 
-#[cfg(test)]
-mod test;
 #[doc(hidden)]
 pub mod __test_api;
+#[cfg(test)]
+mod test;
 
 /// Methods for composing and decomposing characters.
 pub mod char {
-    pub use normalize::{decompose_canonical, decompose_compatible, compose};
+    pub use normalize::{compose, decompose_canonical, decompose_compatible};
 
     pub use lookups::{canonical_combining_class, is_combining_mark};
 }
 
-
 /// Methods for iterating over strings while applying Unicode normalizations
 /// as described in
 /// [Unicode Standard Annex #15](http://www.unicode.org/reports/tr15/).
-pub trait UnicodeNormalization<I: Iterator<Item=char>> {
+pub trait UnicodeNormalization<I: Iterator<Item = char>> {
     /// Returns an iterator over the string in Unicode Normalization Form D
     /// (canonical decomposition).
     #[inline]
@@ -143,7 +134,7 @@ impl<'a> UnicodeNormalization<Chars<'a>> for &'a str {
     }
 }
 
-impl<I: Iterator<Item=char>> UnicodeNormalization<I> for I {
+impl<I: Iterator<Item = char>> UnicodeNormalization<I> for I {
     #[inline]
     fn nfd(self) -> Decompositions<I> {
         decompose::new_canonical(self)

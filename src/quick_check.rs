@@ -1,7 +1,7 @@
-use UnicodeNormalization;
 use lookups::canonical_combining_class;
 use stream_safe;
 use tables;
+use UnicodeNormalization;
 
 /// The QuickCheck algorithm can quickly determine if a text is or isn't
 /// normalized without any allocations in many cases, but it has to be able to
@@ -19,7 +19,9 @@ pub enum IsNormalized {
 // https://unicode.org/reports/tr15/#Detecting_Normalization_Forms
 #[inline]
 fn quick_check<F, I>(s: I, is_allowed: F, stream_safe: bool) -> IsNormalized
-    where I: Iterator<Item=char>, F: Fn(char) -> IsNormalized
+where
+    I: Iterator<Item = char>,
+    F: Fn(char) -> IsNormalized,
 {
     let mut last_cc = 0u8;
     let mut nonstarter_count = 0;
@@ -42,7 +44,7 @@ fn quick_check<F, I>(s: I, is_allowed: F, stream_safe: bool) -> IsNormalized
             IsNormalized::No => return IsNormalized::No,
             IsNormalized::Maybe => {
                 result = IsNormalized::Maybe;
-            },
+            }
         }
         if stream_safe {
             let decomp = stream_safe::classify_nonstarters(ch);
@@ -67,38 +69,37 @@ fn quick_check<F, I>(s: I, is_allowed: F, stream_safe: bool) -> IsNormalized
 /// `IsNormalized::Maybe` if further checks are necessary.  In this case a check
 /// like `s.chars().nfc().eq(s.chars())` should suffice.
 #[inline]
-pub fn is_nfc_quick<I: Iterator<Item=char>>(s: I) -> IsNormalized {
+pub fn is_nfc_quick<I: Iterator<Item = char>>(s: I) -> IsNormalized {
     quick_check(s, tables::qc_nfc, false)
 }
 
-
 /// Quickly check if a string is in NFKC.
 #[inline]
-pub fn is_nfkc_quick<I: Iterator<Item=char>>(s: I) -> IsNormalized {
+pub fn is_nfkc_quick<I: Iterator<Item = char>>(s: I) -> IsNormalized {
     quick_check(s, tables::qc_nfkc, false)
 }
 
 /// Quickly check if a string is in NFD.
 #[inline]
-pub fn is_nfd_quick<I: Iterator<Item=char>>(s: I) -> IsNormalized {
+pub fn is_nfd_quick<I: Iterator<Item = char>>(s: I) -> IsNormalized {
     quick_check(s, tables::qc_nfd, false)
 }
 
 /// Quickly check if a string is in NFKD.
 #[inline]
-pub fn is_nfkd_quick<I: Iterator<Item=char>>(s: I) -> IsNormalized {
+pub fn is_nfkd_quick<I: Iterator<Item = char>>(s: I) -> IsNormalized {
     quick_check(s, tables::qc_nfkd, false)
 }
 
 /// Quickly check if a string is Stream-Safe NFC.
 #[inline]
-pub fn is_nfc_stream_safe_quick<I: Iterator<Item=char>>(s: I) -> IsNormalized {
+pub fn is_nfc_stream_safe_quick<I: Iterator<Item = char>>(s: I) -> IsNormalized {
     quick_check(s, tables::qc_nfc, true)
 }
 
 /// Quickly check if a string is Stream-Safe NFD.
 #[inline]
-pub fn is_nfd_stream_safe_quick<I: Iterator<Item=char>>(s: I) -> IsNormalized {
+pub fn is_nfd_stream_safe_quick<I: Iterator<Item = char>>(s: I) -> IsNormalized {
     quick_check(s, tables::qc_nfd, true)
 }
 
@@ -108,7 +109,7 @@ pub fn is_nfc(s: &str) -> bool {
     match is_nfc_quick(s.chars()) {
         IsNormalized::Yes => true,
         IsNormalized::No => false,
-        IsNormalized::Maybe => s.chars().eq(s.chars().nfc()),
+        IsNormalized::Maybe => s.chars().eq(s.chars().nfc().map(|c| c.0)),
     }
 }
 
@@ -118,7 +119,7 @@ pub fn is_nfkc(s: &str) -> bool {
     match is_nfkc_quick(s.chars()) {
         IsNormalized::Yes => true,
         IsNormalized::No => false,
-        IsNormalized::Maybe => s.chars().eq(s.chars().nfkc()),
+        IsNormalized::Maybe => s.chars().eq(s.chars().nfkc().map(|c| c.0)),
     }
 }
 
@@ -128,7 +129,7 @@ pub fn is_nfd(s: &str) -> bool {
     match is_nfd_quick(s.chars()) {
         IsNormalized::Yes => true,
         IsNormalized::No => false,
-        IsNormalized::Maybe => s.chars().eq(s.chars().nfd()),
+        IsNormalized::Maybe => s.chars().eq(s.chars().nfd().map(|c| c.0)),
     }
 }
 
@@ -138,7 +139,7 @@ pub fn is_nfkd(s: &str) -> bool {
     match is_nfkd_quick(s.chars()) {
         IsNormalized::Yes => true,
         IsNormalized::No => false,
-        IsNormalized::Maybe => s.chars().eq(s.chars().nfkd()),
+        IsNormalized::Maybe => s.chars().eq(s.chars().nfkd().map(|c| c.0)),
     }
 }
 
@@ -148,7 +149,7 @@ pub fn is_nfc_stream_safe(s: &str) -> bool {
     match is_nfc_stream_safe_quick(s.chars()) {
         IsNormalized::Yes => true,
         IsNormalized::No => false,
-        IsNormalized::Maybe => s.chars().eq(s.chars().stream_safe().nfc()),
+        IsNormalized::Maybe => s.chars().eq(s.chars().stream_safe().nfc().map(|c| c.0)),
     }
 }
 
@@ -158,17 +159,13 @@ pub fn is_nfd_stream_safe(s: &str) -> bool {
     match is_nfd_stream_safe_quick(s.chars()) {
         IsNormalized::Yes => true,
         IsNormalized::No => false,
-        IsNormalized::Maybe => s.chars().eq(s.chars().stream_safe().nfd()),
+        IsNormalized::Maybe => s.chars().eq(s.chars().stream_safe().nfd().map(|c| c.0)),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        IsNormalized,
-        is_nfc_stream_safe_quick,
-        is_nfd_stream_safe_quick,
-    };
+    use super::{is_nfc_stream_safe_quick, is_nfd_stream_safe_quick, IsNormalized};
 
     #[test]
     fn test_stream_safe_nfd() {
