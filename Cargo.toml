@@ -1,12 +1,12 @@
 [package]
 
-name = "unicode-normalization"
-version = "0.1.11"
-authors = ["kwantam <kwantam@gmail.com>"]
+name = "unicode-normalization-alignments"
+version = "0.1.12"
+authors = ["Anthony MOI <m.anthony.moi@gmail.com>"]
 
-homepage = "https://github.com/unicode-rs/unicode-normalization"
-repository = "https://github.com/unicode-rs/unicode-normalization"
-documentation = "https://docs.rs/unicode-normalization/"
+homepage = "https://github.com/n1t0/unicode-normalization"
+repository = "https://github.com/n1t0/unicode-normalization"
+documentation = "https://docs.rs/unicode-normalization-alignments/"
 
 license = "MIT/Apache-2.0"
 keywords = ["text", "unicode", "normalization", "decomposition", "recomposition"]

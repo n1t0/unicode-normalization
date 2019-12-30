@@ -1,6 +1,6 @@
-extern crate unicode_normalization;
-use unicode_normalization::UnicodeNormalization;
-use unicode_normalization::__test_api::stream_safe;
+extern crate unicode_normalization_alignments;
+use unicode_normalization_alignments::UnicodeNormalization;
+use unicode_normalization_alignments::__test_api::stream_safe;
 
 mod data {
     pub mod normalization_tests;
@@ -83,7 +83,7 @@ fn test_official() {
 
 #[test]
 fn test_quick_check() {
-    use unicode_normalization::__test_api::quick_check;
+    use unicode_normalization_alignments::__test_api::quick_check;
     for test in NORMALIZATION_TESTS {
         assert!(quick_check::is_nfc(test.nfc));
         assert!(quick_check::is_nfd(test.nfd));

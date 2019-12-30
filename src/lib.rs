@@ -13,10 +13,10 @@
 //! [Unicode Standard Annex #15](http://www.unicode.org/reports/tr15/).
 //!
 //! ```rust
-//! extern crate unicode_normalization;
+//! extern crate unicode_normalization_alignments;
 //!
-//! use unicode_normalization::char::compose;
-//! use unicode_normalization::UnicodeNormalization;
+//! use unicode_normalization_alignments::char::compose;
+//! use unicode_normalization_alignments::UnicodeNormalization;
 //!
 //! fn main() {
 //!     assert_eq!(compose('A','\u{30a}'), Some('Å'));
@@ -34,7 +34,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! unicode-normalization = "0.1.8"
+//! unicode-normalization-alignments = "0.1.12"
 //! ```
 
 #![deny(missing_docs, unsafe_code)]
